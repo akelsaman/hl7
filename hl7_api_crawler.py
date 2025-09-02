@@ -76,15 +76,38 @@ def writeToPythonFile(data, timestamp, pattern="hl7"):
 	f.write(data)
 	f.close()
 #----------------------------------------
-def getField(field):
-	field = call_api(f"{fieldsURL}/{field}")
+def getField(fieldName):
+	field = call_api(f"{fieldsURL}/{fieldName}")
+
+	if field:
+		if "id" in field:
+			if "fields" in field:
+				if( type(field["fields"]) == list):
+					pass
+				else:
+					writeToPythonFile(f"Error: {fieldName}: fields is not a list.\n", "log", pattern=hl7_version)
+					return field
+			else:
+				writeToPythonFile(f"Error: {fieldName}: fields is not exists.\n", "log", pattern=hl7_version)
+				return field
+		else:
+			writeToPythonFile(f"Error: {fieldName}: id field is not exists.\n", "log", pattern=hl7_version)
+			return field
+	else:
+		writeToPythonFile(f"Error: {fieldName}: is None.\n", "log", pattern=hl7_version)
+		return field
+
 	id = field['id']
-	print(id)
 	fields = field['fields']
 	field['ake_fields'] = {}
 	for subField in fields:
 		subFieldID = subField['id']
-		field['ake_fields'][subFieldID] = getField(subFieldID)
+		print(f"{id}: {subFieldID}")
+		writeToPythonFile(f"{id}: {subFieldID}\n", "log", pattern=hl7_version)
+		if(subFieldID == id):
+			writeToPythonFile(f"Error: {subFieldID}: Infinite recursive/Self referencing.\n", "log", pattern=hl7_version)
+		else:
+			field['ake_fields'][subFieldID] = getField(subFieldID)
 	return field
 # data = getField('PID.4')
 # # print(data)
@@ -105,7 +128,7 @@ def getSegment(segment):
 # writeToPythonFile(data)
 #----------------------------------------
 hl7_version = "2.6"
-segmentIndex = 18
+segmentIndex = 165
 #----------------------------------------
 # url = "https://hl7-definition.caristix.com/v2-api/1/HL7v2.3/Segments/PID"
 # url = "https://hl7-definition.caristix.com/v2-api/1/HL7v2.3/Fields/PID.4.1"
