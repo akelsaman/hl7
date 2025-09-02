@@ -127,8 +127,8 @@ def getSegment(segment):
 # # print(data)
 # writeToPythonFile(data)
 #----------------------------------------
-hl7_version = "2.6"
-segmentIndex = 165
+hl7_version = "2.4"
+segmentIndex = 0
 #----------------------------------------
 # url = "https://hl7-definition.caristix.com/v2-api/1/HL7v2.3/Segments/PID"
 # url = "https://hl7-definition.caristix.com/v2-api/1/HL7v2.3/Fields/PID.4.1"
