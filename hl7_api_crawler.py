@@ -48,7 +48,6 @@ def get_segments():
 #================================================================================
 # https://chatgpt.com/s/t_68acef5720388191ab357ea1880766cd # if authentication needed
 
-
 headers = {
 	"User-Agent": "Mozilla/5.0",  # mimic browser if needed
 	"Accept": "application/json"
@@ -76,6 +75,7 @@ def writeToPythonFile(data, timestamp, pattern="hl7"):
 	f.write(data)
 	f.close()
 #----------------------------------------
+visited_fields = {}
 def getField(fieldName):
 	field = call_api(f"{fieldsURL}/{fieldName}")
 
@@ -104,10 +104,12 @@ def getField(fieldName):
 		subFieldID = subField['id']
 		print(f"{id}: {subFieldID}")
 		writeToPythonFile(f"{id}: {subFieldID}\n", "log", pattern=hl7_version)
-		if(subFieldID == id):
+		if subFieldID == id or subFieldID in visited_fields:
 			writeToPythonFile(f"Error: {subFieldID}: Infinite recursive/Self referencing.\n", "log", pattern=hl7_version)
+			break
 		else:
 			field['ake_fields'][subFieldID] = getField(subFieldID)
+			visited_fields[subFieldID] = None
 	return field
 # data = getField('PID.4')
 # # print(data)
@@ -127,8 +129,8 @@ def getSegment(segment):
 # # print(data)
 # writeToPythonFile(data)
 #----------------------------------------
-hl7_version = "2.4"
-segmentIndex = 0
+hl7_version = "2.5"
+segmentIndex = 131
 #----------------------------------------
 # url = "https://hl7-definition.caristix.com/v2-api/1/HL7v2.3/Segments/PID"
 # url = "https://hl7-definition.caristix.com/v2-api/1/HL7v2.3/Fields/PID.4.1"

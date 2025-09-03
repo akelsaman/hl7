@@ -16,7 +16,7 @@ OBR|1|309901965^HNAM_ORDERID||350020^F11 Buckwheat|||20240529152400|||CERNERCERN
 import timeit
 t = timeit.timeit(
     stmt=lambda: hl7.parse(message),
-    number=10000  # how many times to run
+    number=100000  # how many times to run
 )
 print(f"Execution time: {t:.6f} seconds")
 

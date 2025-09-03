@@ -1,3 +1,4 @@
+from hl7_standard_versions.hl7_v2_3 import *
 #================================================================================
 def setCurrent(tree, node, value):
 	tree[node] = value
@@ -18,16 +19,22 @@ def parser(hl7_message_dictionary, message, segment_code="MSH"):
 	tree = None
 	node = None
 	count = None
+
+	segment_schema = hl7_v2_3[segment_code]['ake_segment']
+
 	for position in range(start, len(message)):
 		try:
 			char = message[position]
+			field_code = f"{segment_code}.{fields_count}"
+			component_code = f"{field_code}.{components_count}"
+			subcomponents_code = f"{component_code}.{subcomponents_count}"
 			if char == '|': # match |: dictionary[F0] = None # start_delimiter: | # position != start and position - start < 2
 				if start_delimiter == '|': # | | close a previous single value field and start new field
-					field = segment[f"F{fields_count}"] = message[start:position]
+					field = segment[field_code] = message[start:position]
 				elif start_delimiter == '^': # ^ | close a single value component and start new field
-					field[f"C{components_count}"] = message[start:position]
+					field[component_code] = message[start:position]
 				elif start_delimiter == '&': # & | close an always single value subcomponent and start new field
-					field[f"C{components_count}"][f"SC{subcomponents_count}"] = message[start:position]
+					field[component_code][subcomponents_code] = message[start:position]
 				elif start_delimiter == '~': # ~ | close a single value repitition and start new field
 					field.append(message[start:position])
 				elif start_delimiter == new_segment_delimiter: # create segment
@@ -39,10 +46,10 @@ def parser(hl7_message_dictionary, message, segment_code="MSH"):
 						hl7_message_dictionary[segment_code].append(segment)
 					else:
 						hl7_message_dictionary[segment_code] = segment
-
+					segment_schema = hl7_v2_3[segment_code]['ake_segment']
 				#-----last will be written to field
 				tree = segment
-				nodeType = "F"
+				nodeType = segment_code
 				count = fields_count
 				#----------
 				start_delimiter = '|'
@@ -51,21 +58,28 @@ def parser(hl7_message_dictionary, message, segment_code="MSH"):
 				components_count = 1
 				subcomponents_count = 1
 				composedField = False
+
+				# field_code = f"{segment_code}.{fields_count}"
+				# print(field_code)
+				# if field_code in segment_schema['ake_fields']:
+				# 	field_schema = segment_schema['ake_fields'][field_code]
+				# 	fieldName = field_schema['name']
+				# 	print(fieldName)
 			#----------------------------------------
 			elif char == '^':
 				if start_delimiter == '|': # | ^ convert a single value field to field with components
-					field = segment[f"F{fields_count}"] = {}
+					field = segment[field_code] = {}
 					composedField = True
-					field[f"C{components_count}"] = message[start:position]
+					field[component_code] = message[start:position]
 				elif start_delimiter == '^': # ^ ^ close a previous single value component and start a new component
-					field[f"C{components_count}"] = message[start:position]
+					field[component_code] = message[start:position]
 				elif start_delimiter == '&': # & ^ close an always single value subcomponent and start a new component
-					field[f"C{components_count}"][f"SC{subcomponents_count}"] = message[start:position]
+					field[component_code][subcomponents_code] = message[start:position]
 				elif start_delimiter == '~': # ~ ^ close the last component in repitition and start a new component in a new repitition # current repitition has compoenents so the previous one
-					field[f"C{components_count}"] = message[start:position]
+					field[component_code] = message[start:position]
 				#-----last will be written to compoent
 				tree = field
-				nodeType = "C"
+				nodeType = field_code
 				count = components_count
 				#----------
 				start = position + 1
@@ -76,21 +90,21 @@ def parser(hl7_message_dictionary, message, segment_code="MSH"):
 			#----------------------------------------
 			elif char == '&':
 				if start_delimiter == '|': # | & convert a single value field to field with components and make first component in the field to component with subcomponents
-					field = segment[f"F{fields_count}"] = {}
-					field[f"C{components_count}"] = {}
+					field = segment[field_code] = {}
+					field[component_code] = {}
 					composedField = True
 					composedComponent = True
 				elif start_delimiter == '^': # ^ & convert a single value component to component with subcomponents
-					field[f"C{components_count}"] = {}
+					field[component_code] = {}
 					composedComponent = True
 				# elif start_delimiter == '&': # it & & will works automatically because the next uncommented line # ex.: |abc1~abc2~abc3|
-					# field[f"C{components_count}"][f"SC{subcomponents_count}"] = message[start:position]
+					# field[component_code][subcomponents_code] = message[start:position]
 				# elif start_delimiter == '~': # ~ & it will works automatically because the next uncommented line # ex.: |aa&bb^cc&dd~ee&ff^gg&hh|
-					# field[f"C{components_count}"][f"SC{subcomponents_count}"] = message[start:position]
-				field[f"C{components_count}"][f"SC{subcomponents_count}"] = message[start:position]
+					# field[component_code][subcomponents_code] = message[start:position]
+				field[component_code][subcomponents_code] = message[start:position]
 				#-----last will be written to subcompoent
-				tree = field[f"C{components_count}"]
-				nodeType = "SC"
+				tree = field[component_code]
+				nodeType = component_code
 				count = subcomponents_count
 				#----------
 				start = position + 1
@@ -99,23 +113,23 @@ def parser(hl7_message_dictionary, message, segment_code="MSH"):
 			#----------------------------------------
 			elif char == '~': # convert field to multi values list 'repitions'
 				if start_delimiter == '^': # convert field with components to list of repetition with components
-					field[f"C{components_count}"] = message[start:position]
-					if not (type(segment[f"F{fields_count}"]) == list):
-						segment[f"F{fields_count}"] = [segment[f"F{fields_count}"]]
-					segment[f"F{fields_count}"].append({})
-					lastFieldIndex = len(segment[f"F{fields_count}"]) - 1
-					field = segment[f"F{fields_count}"][lastFieldIndex]
+					field[f"{segment_code}.{fields_count}.{components_count}"] = message[start:position]
+					if not (type(segment[field_code]) == list):
+						segment[field_code] = [segment[field_code]]
+					segment[field_code].append({})
+					lastFieldIndex = len(segment[field_code]) - 1
+					field = segment[field_code][lastFieldIndex]
 				elif start_delimiter == '|': # convert field from single values to multiple values
-					field = segment[f"F{fields_count}"] = [message[start:position]] # first repetition in the field
+					field = segment[field_code] = [message[start:position]] # first repetition in the field
 				elif start_delimiter == '&':
-					field[f"C{components_count}"][f"SC{subcomponents_count}"] = message[start:position]
-					if not (type(segment[f"F{fields_count}"]) == list):
-						segment[f"F{fields_count}"] = [segment[f"F{fields_count}"]]
-					segment[f"F{fields_count}"].append({"C1": {}})
-					lastFieldIndex = len(segment[f"F{fields_count}"]) - 1
-					field = segment[f"F{fields_count}"][lastFieldIndex]
+					field[component_code][subcomponents_code] = message[start:position]
+					if not (type(segment[field_code]) == list):
+						segment[field_code] = [segment[field_code]]
+					segment[field_code].append({f"{field_code}.1": {}})
+					lastFieldIndex = len(segment[field_code]) - 1
+					field = segment[field_code][lastFieldIndex]
 				elif start_delimiter == '~':
-					segment[f"F{fields_count}"].append(message[start:position])
+					segment[field_code].append(message[start:position])
 				#-----last will be written to repitition
 				tree = field
 				#----------
@@ -128,7 +142,7 @@ def parser(hl7_message_dictionary, message, segment_code="MSH"):
 				if type(tree) is list:
 					tree.append(message[start:position]) # start delimiter will always be ~ with list tree
 				else: # if start delimiter is | ^ &
-					tree[f"{nodeType}{count+1}"] = message[start:position]
+					tree[f"{nodeType}.{count+1}"] = message[start:position]
 				fields_count = 0
 				components_count = 1
 				subcomponents_count = 1
@@ -146,10 +160,19 @@ def parser(hl7_message_dictionary, message, segment_code="MSH"):
 	if type(tree) is list: # start delimiter will always be ~ with list tree
 		tree.append(message[start:position+1])
 	else:  # if start delimiter is | ^ &
-		tree[f"{nodeType}{count+1}"] = message[start:position+1]
+		tree[f"{nodeType}.{count+1}"] = message[start:position+1]
 
 #================================================================================
+# https://github.com/microsoft/FHIR-Converter/blob/main/docs/HL7v2-templates.md
+# https://chatgpt.com/share/68abbfa5-fc08-800c-9627-e4456c1d962d # whole chat
+# https://chatgpt.com/s/t_68ab2c5b2c1c8191a6b19638e9c5edcb # design HL7 Engine
+# https://chatgpt.com/s/t_68ab2c69d71c8191a7371d2eaa4bdfae # what is MLLP
+# https://chatgpt.com/s/t_68ab2ca027b48191b64cbe673af4a048 # design HL7 Engine with MLLP
+# https://chatgpt.com/s/t_68ab2cd08fc081918ce5aa763569beb6 # MLLP client and server in python
+# https://chatgpt.com/s/t_68aba56fe7e88191adb6db6721d8ccfd # format and semantic escape characters
 
+# https://chatgpt.com/share/68af5d7c-7460-800c-afaa-00bacc51f615 # design HL7 integration in python from python packages
+#================================================================================
 # start = 0, position = 0
 # 
 # --- position += 1
