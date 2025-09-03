@@ -12,9 +12,9 @@ from unittest import TestCase # Using unittest.TestCase for more comprehensive t
 # message = """|1||123456^^^HOSP^MR~789012^^^CLINIC^PI||Doe^John^A&Junior||19800101|M"""
 
 #^~\& # Normal\R\Value~Abnormal\T\Value
-message = """MSH|^~\\&|AppA|FacA|AppB|FacB|202508231630||ADT^A01|MSG123|P|2.5
-PID|1||123456^^^HOSP^MR~789012^^^CLINIC^PI||Doe^John^A&Junior||19800101|M
-OBX|1|TX|TEST^BloodTest||Normal\R\Value~Abnormal\T\Value|N"""
+# message = """MSH|^~\\&|AppA|FacA|AppB|FacB|202508231630||ADT^A01|MSG123|P|2.5
+# PID|1||123456^^^HOSP^MR~789012^^^CLINIC^PI||Doe^John^A&Junior||19800101|M
+# OBX|1|TX|TEST^BloodTest||Normal\R\Value~Abnormal\T\Value|N"""
 
 message = """MSH|^~\&|12747|12747|CRELIO|CRELIO|20240529153012||ORM^O01|Q106013102T122699578||2.3||||||8859/1
 PID|1|999999999^^^RRL MRN^MRN|999999999^^^RRL MRN^MRN||ZZZTEST^RRLM^||19880809|Male||National||||||||99999999999^^^RRL FIN^FIN NBR|9999999999||||||0|||Saudi
